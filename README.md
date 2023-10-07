@@ -34,6 +34,7 @@ func main() {
     defer expression.Close()
     result, err := expression.Evaluate(data);  // returns 24
 }
+```
 
 ## More information
 - JSONata [documentation](http://docs.jsonata.org/)
