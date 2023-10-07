@@ -60,9 +60,7 @@ func Compile(str string, opts ...Options) (*Expression, error) {
 
 	opt := map[string]any{}
 	for _, v := range opts {
-		if v.Recover {
-			opt["recover"] = true
-		}
+		opt["recover"] = v.Recover
 	}
 
 	parse, _ := goja.AssertFunction(exports)
