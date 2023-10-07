@@ -12,7 +12,7 @@ Reference implementation of the [JSONata query and transformation language](http
 
 ## Installation
 
-- `go get github.com/siyul-park/jsonata`
+- `go get github.com/siyul-park/jsonata-go`
 
 ## Quick start
 
@@ -20,7 +20,7 @@ Reference implementation of the [JSONata query and transformation language](http
 package main
 
 import (
-  "github.com/siyul-park/jsonata"
+  jsonata "github.com/siyul-park/jsonata-go"
 )
 
 var data = map[string]any{

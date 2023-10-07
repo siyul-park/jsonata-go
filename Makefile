@@ -1,6 +1,6 @@
 -include .env
 
-PACKAGE := "github.com/siyul-park/jsonata"
+PACKAGE := "github.com/siyul-park/jsonata-go"
 
 GO_PACKAGE := $(shell go list ${PACKAGE}/...)
 

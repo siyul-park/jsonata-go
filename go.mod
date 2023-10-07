@@ -1,4 +1,4 @@
-module github.com/siyul-park/jsonata
+module github.com/siyul-park/jsonata-go
 
 go 1.21
 
