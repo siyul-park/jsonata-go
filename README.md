@@ -18,7 +18,7 @@ Reference implementation of the [JSONata query and transformation language](http
 package main
 
 import (
-  jsonata "github.com/siyul-park/jsonata-go"
+  "github.com/siyul-park/jsonata-go"
 )
 
 var data = map[string]any{
