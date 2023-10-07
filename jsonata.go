@@ -8,11 +8,26 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/iancoleman/strcase"
+	"github.com/mitchellh/mapstructure"
 )
 
 type (
 	Options struct {
 		Recover bool
+	}
+
+	ExprNode struct {
+		Type        string
+		Value       any
+		Position    int
+		Arguments   []*ExprNode
+		Name        string
+		Procedure   *ExprNode
+		Steps       []*ExprNode
+		Expressions []*ExprNode
+		Stages      []*ExprNode
+		Lhs         []*ExprNode
+		Rhs         *ExprNode
 	}
 
 	Expression struct {
@@ -58,12 +73,14 @@ func Compile(str string, opts ...Options) (*Expression, error) {
 		return nil, err
 	}
 
+	module = vm.Get("module").ToObject(vm)
+
 	opt := map[string]any{}
 	for _, v := range opts {
 		opt["recover"] = v.Recover
 	}
 
-	compile, _ := goja.AssertFunction(exports)
+	compile, _ := goja.AssertFunction(module.Get("exports"))
 
 	if exp, err := compile(goja.Undefined(), vm.ToValue(str), vm.ToValue(opt)); err != nil {
 		return nil, err
@@ -95,6 +112,20 @@ func (e *Expression) Assign(name string, value any) error {
 	assign, _ := goja.AssertFunction(e.value.Get("assign"))
 	_, err := assign(e.value, e.vm.ToValue(name), e.vm.ToValue(value))
 	return err
+}
+
+func (e *Expression) Ast() (*ExprNode, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	node := &ExprNode{}
+	ast, _ := goja.AssertFunction(e.value.Get("ast"))
+	if v, err := ast(e.value); err != nil {
+		return nil, err
+	} else if err := mapstructure.Decode(v.Export(), &node); err != nil {
+		return nil, err
+	}
+	return node, nil
 }
 
 func (*fieldNameMapper) FieldName(t reflect.Type, f reflect.StructField) string {

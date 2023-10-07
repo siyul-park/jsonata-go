@@ -28,6 +28,14 @@ func TestExpression_Evaluate(t *testing.T) {
 	assert.Equal(t, int64(24), output)
 }
 
+func TestExpression_Ast(t *testing.T) {
+	exp := MustCompile("$sum(example.value)")
+
+	ast, err := exp.Ast()
+	assert.NoError(t, err)
+	assert.NotNil(t, ast)
+}
+
 func BenchmarkExpression_Compile(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		exp, err := Compile("$sum(example.value)")
@@ -51,5 +59,15 @@ func BenchmarkExpression_Evaluate(b *testing.B) {
 		output, err := exp.Evaluate(data, nil)
 		assert.NoError(b, err)
 		assert.Equal(b, int64(24), output)
+	}
+}
+
+func BenchmarkExpression_Ast(b *testing.B) {
+	exp := MustCompile("$sum(example.value)")
+
+	for i := 0; i < b.N; i++ {
+		ast, err := exp.Ast()
+		assert.NoError(b, err)
+		assert.NotNil(b, ast)
 	}
 }
