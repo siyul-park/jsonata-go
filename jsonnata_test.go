@@ -10,8 +10,6 @@ func TestCompile(t *testing.T) {
 	exp, err := Compile("$sum(example.value)")
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
-
-	assert.NoError(t, exp.Close())
 }
 
 func TestExpression_Evaluate(t *testing.T) {
@@ -24,7 +22,6 @@ func TestExpression_Evaluate(t *testing.T) {
 	}
 
 	exp := MustCompile("$sum(example.value)")
-	defer func() { _ = exp.Close() }()
 
 	output, err := exp.Evaluate(data, nil)
 	assert.NoError(t, err)
@@ -36,8 +33,6 @@ func BenchmarkExpression_Compile(b *testing.B) {
 		exp, err := Compile("$sum(example.value)")
 		assert.NoError(b, err)
 		assert.NotNil(b, exp)
-
-		assert.NoError(b, exp.Close())
 	}
 }
 
@@ -51,7 +46,6 @@ func BenchmarkExpression_Evaluate(b *testing.B) {
 	}
 
 	exp := MustCompile("$sum(example.value)")
-	defer func() { _ = exp.Close() }()
 
 	for i := 0; i < b.N; i++ {
 		output, err := exp.Evaluate(data, nil)

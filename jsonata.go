@@ -32,39 +32,6 @@ var (
 	program = goja.MustCompile("jsonata.min.js", source, true)
 )
 
-const (
-	keyModule  = "module"
-	keyExports = "exports"
-)
-
-var (
-	vmPool = sync.Pool{
-		New: func() any {
-			vm := goja.New()
-
-			vm.SetFieldNameMapper(&fieldNameMapper{})
-
-			module := vm.NewObject()
-			exports := vm.NewObject()
-
-			if err := vm.Set(keyModule, module); err != nil {
-				panic(err)
-			}
-			if err := vm.Set(keyExports, exports); err != nil {
-				panic(err)
-			}
-			if err := module.Set(keyExports, exports); err != nil {
-				panic(err)
-			}
-
-			if _, err := vm.RunProgram(program); err != nil {
-				panic(err)
-			}
-			return vm
-		},
-	}
-)
-
 func MustCompile(str string, opts ...Options) *Expression {
 	exp, err := Compile(str, opts...)
 	if err != nil {
@@ -74,7 +41,22 @@ func MustCompile(str string, opts ...Options) *Expression {
 }
 
 func Compile(str string, opts ...Options) (*Expression, error) {
-	vm := vmPool.Get().(*goja.Runtime)
+	vm := goja.New()
+
+	vm.SetFieldNameMapper(&fieldNameMapper{})
+
+	module := vm.NewObject()
+	exports := vm.NewObject()
+
+	if err := vm.Set("module", module); err != nil {
+		return nil, err
+	} else if err := vm.Set("exports", exports); err != nil {
+		return nil, err
+	} else if err := module.Set("exports", exports); err != nil {
+		return nil, err
+	} else if _, err := vm.RunProgram(program); err != nil {
+		return nil, err
+	}
 
 	opt := map[string]any{}
 	for _, v := range opts {
@@ -82,9 +64,6 @@ func Compile(str string, opts ...Options) (*Expression, error) {
 			opt["recover"] = true
 		}
 	}
-
-	module := vm.Get(keyModule).ToObject(vm)
-	exports := module.Get(keyExports)
 
 	parse, _ := goja.AssertFunction(exports)
 
@@ -117,14 +96,6 @@ func (e *Expression) Assign(name string, value any) error {
 	assign, _ := goja.AssertFunction(e.value.Get("assign"))
 	_, err := assign(e.value, e.vm.ToValue(name), e.vm.ToValue(value))
 	return err
-}
-
-func (e *Expression) Close() error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	vmPool.Put(e.vm)
-	return nil
 }
 
 func (*fieldNameMapper) FieldName(t reflect.Type, f reflect.StructField) string {
