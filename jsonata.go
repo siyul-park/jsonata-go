@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/dop251/goja"
 	"github.com/iancoleman/strcase"
@@ -28,6 +29,18 @@ type (
 		Stages      []*ExprNode
 		Lhs         []*ExprNode
 		Rhs         *ExprNode
+	}
+
+	Environment struct {
+		Timestamp time.Time
+		Async     bool
+		Bind      func(string, any) error
+		Lookup    func(string) (any, error)
+	}
+
+	Focus struct {
+		Environment Environment
+		Input       any
 	}
 
 	Expression struct {
@@ -111,6 +124,47 @@ func (e *Expression) Assign(name string, value any) error {
 
 	assign, _ := goja.AssertFunction(e.value.Get("assign"))
 	_, err := assign(e.value, e.vm.ToValue(name), e.vm.ToValue(value))
+	return err
+}
+
+func (e *Expression) RegisterFunction(name string, implementation func(f *Focus, args ...any) (any, error), signature string) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	registerFunction, _ := goja.AssertFunction(e.value.Get("registerFunction"))
+	_, err := registerFunction(e.value, e.vm.ToValue(name), e.vm.ToValue(func(call goja.FunctionCall) goja.Value {
+		f := &Focus{}
+
+		this := call.This.ToObject(e.vm)
+		environment := this.Get("environment").ToObject(e.vm)
+
+		f.Environment.Async = environment.Get("async").ToBoolean()
+		f.Environment.Timestamp = environment.Get("timestamp").Export().(time.Time)
+		f.Environment.Bind = func(s string, a any) error {
+			bind, _ := goja.AssertFunction(environment.Get("bind"))
+			_, err := bind(goja.Undefined(), e.vm.ToValue(s), e.vm.ToValue(a))
+			return err
+		}
+		f.Environment.Lookup = func(s string) (any, error) {
+			lookup, _ := goja.AssertFunction(environment.Get("lookup"))
+			if v, err := lookup(goja.Undefined(), e.vm.ToValue(s)); err != nil {
+				return nil, err
+			} else {
+				return v.Export(), nil
+			}
+		}
+		f.Input = this.Get("input").Export()
+
+		args := make([]any, len(call.Arguments))
+		for i, arg := range call.Arguments {
+			args[i] = arg.Export()
+		}
+		if v, err := implementation(f, args...); err != nil {
+			panic(err)
+		} else {
+			return e.vm.ToValue(v)
+		}
+	}), e.vm.ToValue(signature))
 	return err
 }
 

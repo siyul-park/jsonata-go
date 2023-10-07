@@ -28,6 +28,17 @@ func TestExpression_Evaluate(t *testing.T) {
 	assert.Equal(t, int64(24), output)
 }
 
+func TestExpression_RegisterFunction(t *testing.T) {
+	exp := MustCompile("$greet()")
+
+	err := exp.RegisterFunction("greet", func(f *Focus, args ...any) (any, error) { return "Hello world", nil }, "")
+	assert.NoError(t, err)
+
+	output, err := exp.Evaluate(nil, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello world", output)
+}
+
 func TestExpression_Ast(t *testing.T) {
 	exp := MustCompile("$sum(example.value)")
 
@@ -59,6 +70,15 @@ func BenchmarkExpression_Evaluate(b *testing.B) {
 		output, err := exp.Evaluate(data, nil)
 		assert.NoError(b, err)
 		assert.Equal(b, int64(24), output)
+	}
+}
+
+func BenchmarkExpression_RegisterFunction(b *testing.B) {
+	exp := MustCompile("$greet()")
+
+	for i := 0; i < b.N; i++ {
+		err := exp.RegisterFunction("greet", func(f *Focus, args ...any) (any, error) { return "Hello world", nil }, "")
+		assert.NoError(b, err)
 	}
 }
 
