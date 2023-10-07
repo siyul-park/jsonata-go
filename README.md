@@ -33,6 +33,7 @@ var data = map[string]any{
 
 func main() {
     expression := jsonata.MustCompile("$sum(example.value)")
+    defer expression.Close()
     result, err := expression.Evaluate(data);  // returns 24
 }
 
