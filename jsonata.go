@@ -18,7 +18,7 @@ type (
 	Expression struct {
 		vm    *goja.Runtime
 		value *goja.Object
-		mu    sync.Mutex
+		mu    *sync.Mutex
 	}
 
 	fieldNameMapper struct{}
@@ -63,14 +63,15 @@ func Compile(str string, opts ...Options) (*Expression, error) {
 		opt["recover"] = v.Recover
 	}
 
-	parse, _ := goja.AssertFunction(exports)
+	compile, _ := goja.AssertFunction(exports)
 
-	if exp, err := parse(goja.Undefined(), vm.ToValue(str), vm.ToValue(opt)); err != nil {
+	if exp, err := compile(goja.Undefined(), vm.ToValue(str), vm.ToValue(opt)); err != nil {
 		return nil, err
 	} else {
 		return &Expression{
 			vm:    vm,
 			value: exp.ToObject(vm),
+			mu:    &sync.Mutex{},
 		}, nil
 	}
 }
