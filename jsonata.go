@@ -106,12 +106,18 @@ func Compile(str string, opts ...Options) (*Expression, error) {
 	}
 }
 
-func (e *Expression) Evaluate(input any, bindings map[string]any) (any, error) {
+func (e *Expression) Evaluate(input any, bindings ...map[string]any) (any, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
+	jsInput := e.vm.ToValue(input)
+	jsBindings := goja.Undefined()
+	if len(bindings) > 0 {
+		jsBindings = e.vm.ToValue(bindings[len(bindings)-1])
+	}
+
 	evaluate, _ := goja.AssertFunction(e.value.Get("evaluate"))
-	if output, err := evaluate(e.value, e.vm.ToValue(input), e.vm.ToValue(bindings)); err != nil {
+	if output, err := evaluate(e.value, jsInput, jsBindings); err != nil {
 		return nil, err
 	} else {
 		return output.Export().(*goja.Promise).Result().Export(), nil
@@ -127,12 +133,12 @@ func (e *Expression) Assign(name string, value any) error {
 	return err
 }
 
-func (e *Expression) RegisterFunction(name string, implementation func(f *Focus, args ...any) (any, error), signature string) error {
+func (e *Expression) RegisterFunction(name string, implementation func(f *Focus, args ...any) (any, error), signatures ...string) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	registerFunction, _ := goja.AssertFunction(e.value.Get("registerFunction"))
-	_, err := registerFunction(e.value, e.vm.ToValue(name), e.vm.ToValue(func(call goja.FunctionCall) goja.Value {
+	jsName := e.vm.ToValue(name)
+	jsImplementation := e.vm.ToValue(func(call goja.FunctionCall) goja.Value {
 		f := &Focus{}
 
 		this := call.This.ToObject(e.vm)
@@ -164,7 +170,14 @@ func (e *Expression) RegisterFunction(name string, implementation func(f *Focus,
 		} else {
 			return e.vm.ToValue(v)
 		}
-	}), e.vm.ToValue(signature))
+	})
+	jsSignature := goja.Undefined()
+	if len(signatures) > 0 {
+		jsSignature = e.vm.ToValue(signatures[len(signatures)-1])
+	}
+
+	registerFunction, _ := goja.AssertFunction(e.value.Get("registerFunction"))
+	_, err := registerFunction(e.value, jsName, jsImplementation, jsSignature)
 	return err
 }
 
