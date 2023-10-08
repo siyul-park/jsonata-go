@@ -35,6 +35,21 @@ func main() {
 }
 ```
 
+## Benchmark
+```
+goos: linux
+goarch: amd64
+pkg: github.com/siyul-park/jsonata-go
+cpu: AMD EPYC 7282 16-Core Processor                
+BenchmarkExpression_Compile-4                        241           4289580 ns/op         1533227 B/op      19943 allocs/op
+BenchmarkExpression_Evaluate-4                      4311            238447 ns/op           62422 B/op        872 allocs/op
+BenchmarkExpression_Assign-4                      627997              1706 ns/op             522 B/op          9 allocs/op
+BenchmarkExpression_RegisterFunction-4            296378              4030 ns/op            1845 B/op         23 allocs/op
+BenchmarkExpression_Ast-4                          15912             76499 ns/op           29610 B/op        413 allocs/op
+PASS
+ok      github.com/siyul-park/jsonata-go        6.962s
+```
+
 ## More information
 - JSONata [documentation](http://docs.jsonata.org/)
 - [JavaScript API](http://docs.jsonata.org/embedding-extending)

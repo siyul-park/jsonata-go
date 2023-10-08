@@ -60,6 +60,10 @@ var (
 	program = goja.MustCompile("jsonata.min.js", source, true)
 )
 
+func init() {
+	source = ""
+}
+
 func MustCompile(str string, opts ...Options) *Expression {
 	exp, err := Compile(str, opts...)
 	if err != nil {
