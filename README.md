@@ -41,13 +41,13 @@ goos: linux
 goarch: amd64
 pkg: github.com/siyul-park/jsonata-go
 cpu: AMD EPYC 7282 16-Core Processor                
-BenchmarkExpression_Compile-4                        241           4289580 ns/op         1533227 B/op      19943 allocs/op
-BenchmarkExpression_Evaluate-4                      4311            238447 ns/op           62422 B/op        872 allocs/op
-BenchmarkExpression_Assign-4                      627997              1706 ns/op             522 B/op          9 allocs/op
-BenchmarkExpression_RegisterFunction-4            296378              4030 ns/op            1845 B/op         23 allocs/op
-BenchmarkExpression_Ast-4                          15912             76499 ns/op           29610 B/op        413 allocs/op
+BenchmarkExpression_Compile-4            	     207	   5672824 ns/op	 1533080 B/op	   19941 allocs/op
+BenchmarkExpression_Evaluate-4           	    3902	    260193 ns/op	   62461 B/op	     873 allocs/op
+BenchmarkExpression_Assign-4             	  822211	      1542 ns/op	     521 B/op	       9 allocs/op
+BenchmarkExpression_RegisterFunction-4   	  243468	      4395 ns/op	    1846 B/op	      23 allocs/op
+BenchmarkExpression_Ast-4                	   14838	     80954 ns/op	   29617 B/op	     413 allocs/op
 PASS
-ok      github.com/siyul-park/jsonata-go        6.962s
+ok  	github.com/siyul-park/jsonata-go	8.251s
 ```
 
 ## More information

@@ -32,13 +32,19 @@ type (
 	}
 
 	Environment struct {
-		vm    *goja.Runtime
-		value *goja.Object
+		async     bool
+		timestamp time.Time
+		vm        *goja.Runtime
+		value     *goja.Object
+		mu        sync.Mutex
 	}
 
 	Focus struct {
-		vm    *goja.Runtime
-		value *goja.Object
+		environment *Environment
+		input       any
+		vm          *goja.Runtime
+		value       *goja.Object
+		mu          sync.Mutex
 	}
 
 	Expression struct {
@@ -103,7 +109,6 @@ func Compile(str string, opts ...Options) (*Expression, error) {
 		return &Expression{
 			vm:    vm,
 			value: exp.ToObject(vm),
-			mu:    sync.Mutex{},
 		}, nil
 	}
 }
@@ -181,22 +186,49 @@ func (e *Expression) Ast() (*ExprNode, error) {
 }
 
 func (f *Focus) Environment() *Environment {
-	return &Environment{
-		value: f.vm.Get("environment").ToObject(f.vm),
-		vm:    f.vm,
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.environment == nil {
+		f.environment = &Environment{
+			value: f.vm.Get("environment").ToObject(f.vm),
+			vm:    f.vm,
+		}
 	}
+
+	return f.environment
 }
 
 func (f *Focus) Input() any {
-	return f.vm.Get("input").Export()
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.input == nil {
+		f.input = f.vm.Get("input").Export()
+	}
+	return f.input
 }
 
 func (e *Environment) Async() bool {
-	return e.value.Get("async").ToBoolean()
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	if !e.async {
+		e.async = e.value.Get("async").ToBoolean()
+	}
+
+	return e.async
 }
 
 func (e *Environment) Timestamp() time.Time {
-	return e.value.Get("timestamp").Export().(time.Time)
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	if e.timestamp == (time.Time{}) {
+		e.timestamp = e.value.Get("timestamp").Export().(time.Time)
+	}
+
+	return e.timestamp
 }
 
 func (e *Environment) Bind(s string, a any) error {
@@ -205,7 +237,7 @@ func (e *Environment) Bind(s string, a any) error {
 	return err
 }
 
-func (e Environment) Lookup(s string) (any, error) {
+func (e *Environment) Lookup(s string) (any, error) {
 	lookup, _ := goja.AssertFunction(e.value.Get("lookup"))
 	if v, err := lookup(goja.Undefined(), e.vm.ToValue(s)); err != nil {
 		return nil, err
