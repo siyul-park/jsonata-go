@@ -32,21 +32,19 @@ type (
 	}
 
 	Environment struct {
-		Timestamp time.Time
-		Async     bool
-		Bind      func(string, any) error
-		Lookup    func(string) (any, error)
+		vm    *goja.Runtime
+		value *goja.Object
 	}
 
 	Focus struct {
-		Environment Environment
-		Input       any
+		vm    *goja.Runtime
+		value *goja.Object
 	}
 
 	Expression struct {
 		vm    *goja.Runtime
 		value *goja.Object
-		mu    *sync.Mutex
+		mu    sync.Mutex
 	}
 
 	fieldNameMapper struct{}
@@ -105,7 +103,7 @@ func Compile(str string, opts ...Options) (*Expression, error) {
 		return &Expression{
 			vm:    vm,
 			value: exp.ToObject(vm),
-			mu:    &sync.Mutex{},
+			mu:    sync.Mutex{},
 		}, nil
 	}
 }
@@ -143,27 +141,10 @@ func (e *Expression) RegisterFunction(name string, implementation func(f *Focus,
 
 	jsName := e.vm.ToValue(name)
 	jsImplementation := e.vm.ToValue(func(call goja.FunctionCall) goja.Value {
-		f := &Focus{}
-
-		this := call.This.ToObject(e.vm)
-		environment := this.Get("environment").ToObject(e.vm)
-
-		f.Environment.Async = environment.Get("async").ToBoolean()
-		f.Environment.Timestamp = environment.Get("timestamp").Export().(time.Time)
-		f.Environment.Bind = func(s string, a any) error {
-			bind, _ := goja.AssertFunction(environment.Get("bind"))
-			_, err := bind(goja.Undefined(), e.vm.ToValue(s), e.vm.ToValue(a))
-			return err
+		f := &Focus{
+			value: call.This.ToObject(e.vm),
+			vm:    e.vm,
 		}
-		f.Environment.Lookup = func(s string) (any, error) {
-			lookup, _ := goja.AssertFunction(environment.Get("lookup"))
-			if v, err := lookup(goja.Undefined(), e.vm.ToValue(s)); err != nil {
-				return nil, err
-			} else {
-				return v.Export(), nil
-			}
-		}
-		f.Input = this.Get("input").Export()
 
 		args := make([]any, len(call.Arguments))
 		for i, arg := range call.Arguments {
@@ -197,6 +178,40 @@ func (e *Expression) Ast() (*ExprNode, error) {
 		return nil, err
 	}
 	return node, nil
+}
+
+func (f *Focus) Environment() *Environment {
+	return &Environment{
+		value: f.vm.Get("environment").ToObject(f.vm),
+		vm:    f.vm,
+	}
+}
+
+func (f *Focus) Input() any {
+	return f.vm.Get("input").Export()
+}
+
+func (e *Environment) Async() bool {
+	return e.value.Get("async").ToBoolean()
+}
+
+func (e *Environment) Timestamp() time.Time {
+	return e.value.Get("timestamp").Export().(time.Time)
+}
+
+func (e *Environment) Bind(s string, a any) error {
+	bind, _ := goja.AssertFunction(e.value.Get("bind"))
+	_, err := bind(goja.Undefined(), e.vm.ToValue(s), e.vm.ToValue(a))
+	return err
+}
+
+func (e Environment) Lookup(s string) (any, error) {
+	lookup, _ := goja.AssertFunction(e.value.Get("lookup"))
+	if v, err := lookup(goja.Undefined(), e.vm.ToValue(s)); err != nil {
+		return nil, err
+	} else {
+		return v.Export(), nil
+	}
 }
 
 func (*fieldNameMapper) FieldName(t reflect.Type, f reflect.StructField) string {
