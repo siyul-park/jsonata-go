@@ -18,3 +18,19 @@ func IsNumeric(v any) bool {
 		return false
 	}
 }
+
+func IsArrayOfStrings(v any) bool {
+	if v == nil {
+		return true
+	} else if _, ok := v.([]string); ok {
+		return true
+	} else if arr, ok := v.([]any); ok {
+		for _, e := range arr {
+			if _, ok := e.(string); !ok {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}

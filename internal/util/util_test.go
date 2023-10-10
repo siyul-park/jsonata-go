@@ -58,3 +58,38 @@ func TestIsNumeric(t *testing.T) {
 		})
 	}
 }
+
+func TestIsArrayOfStrings(t *testing.T) {
+	testCases := []struct {
+		when   any
+		expect bool
+	}{
+		{
+			when:   nil,
+			expect: true,
+		},
+		{
+			when:   "",
+			expect: false,
+		},
+		{
+			when:   []string{"a", "b", "c"},
+			expect: true,
+		},
+		{
+			when:   []any{"a", "b", "c"},
+			expect: true,
+		},
+		{
+			when:   []any{"a", 0, "c"},
+			expect: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%v", tc.when), func(t *testing.T) {
+			ok := IsArrayOfStrings(tc.when)
+			assert.Equal(t, tc.expect, ok)
+		})
+	}
+}
