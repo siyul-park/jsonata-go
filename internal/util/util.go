@@ -1,7 +1,11 @@
 package util
 
-import "math"
+import (
+	"math"
+	"reflect"
+)
 
+// IsNumeric check if value is a finite number.
 func IsNumeric(v any) bool {
 	switch v.(type) {
 	case int, uint, int8, int16, int32, int64, uint8, uint16, uint32, uint64:
@@ -19,6 +23,7 @@ func IsNumeric(v any) bool {
 	}
 }
 
+// IsArrayOfStrings returns true if the arg is an array of strings.
 func IsArrayOfStrings(v any) bool {
 	if v == nil {
 		return true
@@ -32,5 +37,34 @@ func IsArrayOfStrings(v any) bool {
 		}
 		return true
 	}
+	return false
+}
+
+// IsArrayOfNumbers true if the arg is an array of numbers
+func IsArrayOfNumbers(v any) bool {
+	if v == nil {
+		return true
+	}
+
+	switch v.(type) {
+	case []int, []uint, []int8, []int16, []int32, []int64, []uint8, []uint16, []uint32, []uint64, []float32, []float64:
+		v := reflect.ValueOf(v)
+		for i := 0; i < v.Len(); i++ {
+			if !IsNumeric(v.Index(i).Interface()) {
+				return false
+			}
+		}
+		return true
+	}
+
+	if arr, ok := v.([]any); ok {
+		for _, e := range arr {
+			if !IsNumeric(e) {
+				return false
+			}
+		}
+		return true
+	}
+
 	return false
 }
