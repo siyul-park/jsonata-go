@@ -1,4 +1,4 @@
-package parse
+package jsonata
 
 import (
 	"fmt"
@@ -53,7 +53,7 @@ func TestIsNumeric(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%v", tc.when), func(t *testing.T) {
-			ok := IsNumeric(tc.when)
+			ok := isNumeric(tc.when)
 			assert.Equal(t, tc.expect, ok)
 		})
 	}
@@ -88,7 +88,7 @@ func TestIsArrayOfStrings(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%v", tc.when), func(t *testing.T) {
-			ok := IsArrayOfStrings(tc.when)
+			ok := isArrayOfStrings(tc.when)
 			assert.Equal(t, tc.expect, ok)
 		})
 	}
@@ -131,7 +131,7 @@ func TestIsArrayOfNumbers(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%v", tc.when), func(t *testing.T) {
-			ok := IsArrayOfNumbers(tc.when)
+			ok := isArrayOfNumbers(tc.when)
 			assert.Equal(t, tc.expect, ok)
 		})
 	}

@@ -1,4 +1,4 @@
-package parse
+package jsonata
 
 import (
 	"reflect"
@@ -7,12 +7,12 @@ import (
 )
 
 type (
-	Validator struct {
+	validator struct {
 		Definition string
 		Validate   func(args []any, ctx any) ([]any, error)
 	}
 
-	Param struct {
+	param struct {
 		Regex        *regexp.Regexp
 		Type         string
 		Subtype      string
@@ -33,8 +33,8 @@ var (
 	}
 )
 
-// ParseSignature Parses a function signature definition and returns a validation function
-func ParseSignature(signature string) (*Validator, error) {
+// parseSignature Parses a function signature definition and returns a validation function
+func parseSignature(signature string) (*validator, error) {
 	signatureRunes := []rune(signature)
 
 	// create a Regex that represents this signature and return a function that when invoked,
@@ -42,9 +42,9 @@ func ParseSignature(signature string) (*Validator, error) {
 	// step through the signature, one symbol at a time
 	var (
 		position        = 1
-		params          = []Param{}
-		param           = Param{}
-		prevParam Param = param
+		params          = []param{}
+		currParam       = param{}
+		prevParam param = currParam
 	)
 	for position < len(signatureRunes) {
 		symbol := signatureRunes[position]
@@ -55,9 +55,9 @@ func ParseSignature(signature string) (*Validator, error) {
 		}
 
 		next := func() {
-			params = append(params, param)
-			prevParam = param
-			param = Param{}
+			params = append(params, currParam)
+			prevParam = currParam
+			currParam = param{}
 		}
 
 		findClosingBracket := func(str []rune, start int, openSymbol rune, closeSymbol rune) int {
@@ -86,43 +86,43 @@ func ParseSignature(signature string) (*Validator, error) {
 			if regex, err := regexp.Compile("[" + string(symbol) + "m]"); err != nil {
 				return nil, err
 			} else {
-				param.Regex = regex
+				currParam.Regex = regex
 			}
-			param.Type = string(symbol)
+			currParam.Type = string(symbol)
 			next()
 		case 'a': // array
 			//  normally treat any value as singleton array
 			if regex, err := regexp.Compile("[asnblfom]"); err != nil {
 				return nil, err
 			} else {
-				param.Regex = regex
+				currParam.Regex = regex
 			}
-			param.Type = string(symbol)
-			param.Array = true
+			currParam.Type = string(symbol)
+			currParam.Array = true
 			next()
 		case 'f': // function
 			if regex, err := regexp.Compile("f"); err != nil {
 				return nil, err
 			} else {
-				param.Regex = regex
+				currParam.Regex = regex
 			}
-			param.Type = string(symbol)
+			currParam.Type = string(symbol)
 			next()
 		case 'j': // any JSON type
 			if regex, err := regexp.Compile("[asnblom]"); err != nil {
 				return nil, err
 			} else {
-				param.Regex = regex
+				currParam.Regex = regex
 			}
-			param.Type = string(symbol)
+			currParam.Type = string(symbol)
 			next()
 		case 'x': // any type
 			if regex, err := regexp.Compile("[asnblfom]"); err != nil {
 				return nil, err
 			} else {
-				param.Regex = regex
+				currParam.Regex = regex
 			}
-			param.Type = string(symbol)
+			currParam.Type = string(symbol)
 			next()
 		case '-': // use context if param not supplied
 			prevParam.Context = true
@@ -147,7 +147,7 @@ func ParseSignature(signature string) (*Validator, error) {
 				if regex, err := regexp.Compile("[" + string(choice) + "m]"); err != nil {
 					return nil, err
 				} else {
-					param.Regex = regex
+					currParam.Regex = regex
 				}
 			} else {
 				// TODO harder
@@ -157,7 +157,7 @@ func ParseSignature(signature string) (*Validator, error) {
 					Offset: position,
 				}
 			}
-			param.Type = "(" + string(choice) + ")"
+			currParam.Type = "(" + string(choice) + ")"
 			position = endParen
 			next()
 		case '<': // type parameter - can only be applied to 'a' and 'f'
@@ -186,35 +186,6 @@ func ParseSignature(signature string) (*Validator, error) {
 	regex, err := regexp.Compile(regexStrBuilder.String())
 	if err != nil {
 		return nil, err
-	}
-
-	getSymbol := func(value any) rune {
-		if IsNil(value) {
-			return 'l'
-		}
-
-		t := reflect.TypeOf(value)
-		for t.Kind() == reflect.Pointer {
-			t = t.Elem()
-		}
-
-		switch t.Kind() {
-		case reflect.String:
-			return 's'
-		case reflect.Int, reflect.Uint, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
-			return 'n'
-		case reflect.Bool:
-			return 'b'
-		case reflect.Func:
-			return 'f'
-		case reflect.Array, reflect.Slice:
-			return 'a'
-		case reflect.Map, reflect.Struct:
-			return 'o'
-		default:
-			// any value can be undefined, but should be allowed to match
-			return 'm' // m for missing
-		}
 	}
 
 	throwValidationError := func(badArgs []any, badSig string) error {
@@ -248,7 +219,7 @@ func ParseSignature(signature string) (*Validator, error) {
 		}
 	}
 
-	return &Validator{
+	return &validator{
 		Definition: signature,
 		Validate: func(args []any, context any) ([]any, error) {
 			suppliedSig := &strings.Builder{}
@@ -301,7 +272,7 @@ func ParseSignature(signature string) (*Validator, error) {
 											var itemType rune
 											var differentItems []any
 
-											ForEach(arg, func(k, v any) bool {
+											forEach(arg, func(k, v any) bool {
 												if itemType == 0 {
 													itemType = getSymbol(v)
 													if itemType != []rune(param.Subtype)[0] { // TODO recurse further
@@ -349,4 +320,33 @@ func ParseSignature(signature string) (*Validator, error) {
 			return nil, throwValidationError(args, suppliedSig.String())
 		},
 	}, nil
+}
+
+func getSymbol(value any) rune {
+	if isNil(value) {
+		return 'l'
+	}
+
+	t := reflect.TypeOf(value)
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+
+	switch t.Kind() {
+	case reflect.String:
+		return 's'
+	case reflect.Int, reflect.Uint, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
+		return 'n'
+	case reflect.Bool:
+		return 'b'
+	case reflect.Func:
+		return 'f'
+	case reflect.Array, reflect.Slice:
+		return 'a'
+	case reflect.Map, reflect.Struct:
+		return 'o'
+	default:
+		// any value can be undefined, but should be allowed to match
+		return 'm' // m for missing
+	}
 }
