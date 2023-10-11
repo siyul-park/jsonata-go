@@ -1,4 +1,4 @@
-package util
+package parse
 
 import (
 	"math"
@@ -47,7 +47,7 @@ func IsArrayOfNumbers(v any) bool {
 	}
 
 	switch v.(type) {
-	case []int, []uint, []int8, []int16, []int32, []int64, []uint8, []uint16, []uint32, []uint64, []float32, []float64:
+	case []any, []int, []uint, []int8, []int16, []int32, []int64, []uint8, []uint16, []uint32, []uint64, []float32, []float64:
 		v := reflect.ValueOf(v)
 		for i := 0; i < v.Len(); i++ {
 			if !IsNumeric(v.Index(i).Interface()) {
@@ -57,14 +57,43 @@ func IsArrayOfNumbers(v any) bool {
 		return true
 	}
 
-	if arr, ok := v.([]any); ok {
-		for _, e := range arr {
-			if !IsNumeric(e) {
-				return false
-			}
-		}
-		return true
+	return false
+}
+
+func IsNil(v any) bool {
+	defer func() { _ = recover() }()
+	return v == nil || reflect.ValueOf(v).IsNil()
+}
+
+func ForEach(v any, f func(any, any) bool) {
+	rv := reflect.ValueOf(v)
+
+	for rv.Kind() == reflect.Pointer {
+		rv = rv.Elem()
 	}
 
-	return false
+	switch rv.Kind() {
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < rv.Len(); i++ {
+			if !f(i, rv.Index(i).Interface()) {
+				return
+			}
+		}
+	case reflect.Map:
+		iter := rv.MapRange()
+		for iter.Next() {
+			if !f(iter.Key().Interface(), iter.Value().Interface()) {
+				return
+			}
+		}
+	case reflect.Struct:
+		for i := 0; i < rv.NumField(); i++ {
+			if !rv.Type().Field(i).IsExported() {
+				continue
+			}
+			if !f(rv.Type().Field(i).Name, rv.Field(i).Interface()) {
+				return
+			}
+		}
+	}
 }
