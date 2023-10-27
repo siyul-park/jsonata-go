@@ -3,7 +3,7 @@ module github.com/siyul-park/jsonata-go
 go 1.21
 
 require (
-	github.com/dop251/goja v0.0.0-20231024180952-594410467bc6
+	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
 	github.com/iancoleman/strcase v0.3.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/stretchr/testify v1.8.4
