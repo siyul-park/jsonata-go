@@ -3,7 +3,7 @@ module github.com/siyul-park/jsonata-go
 go 1.21
 
 require (
-	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
+	github.com/dop251/goja v0.0.0-20241024094426-79f3a7efcdbd
 	github.com/iancoleman/strcase v0.3.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/stretchr/testify v1.8.4
@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dlclark/regexp2 v1.10.0 // indirect
+	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/google/pprof v0.0.0-20230926050212-f7f687d19a98 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
